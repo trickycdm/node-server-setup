@@ -23,7 +23,7 @@ function setUpDefaults {
   sudo apt-get -y install git;
 }
 function setUpNode {
-  curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -;
+  curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -;
   sudo apt-get install -y nodejs;
   sudo apt-get install -y build-essential;
   sudo npm install -g pm2
@@ -121,6 +121,7 @@ function setUpApacheVhostProxy {
   ServerName $domain
   $subDomain
   ProxyRequests off
+  ProxyPreserveHost On
 
       <Proxy *>
           Order deny,allow
