@@ -1,11 +1,29 @@
 #!/bin/bash
-function checkOsSupport {
-  if [ "`lsb_release -is`" != "Ubuntu" ] && [ "`lsb_release -is`" != "Debian" ]
-  then
-    echo $redText"Unsupported OS. This only works for Ubuntu";
-    exit;
-  fi
+# Add error handling function
+function check_error {
+    if [ $? -ne 0 ]; then
+        echo "Error occurred in the last command. Exiting."
+        exit 1
+    fi
 }
+
+# Update OS check function
+function checkOsSupport {
+    if [ "$(lsb_release -is)" != "Ubuntu" ] && [ "$(lsb_release -is)" != "Debian" ]; then
+        echo "${redText}Unsupported OS. This only works for Ubuntu and Debian.${defaultText}"
+        exit 1
+    fi
+}
+
+# Add firewall setup function
+function setupFirewall {
+    sudo ufw allow OpenSSH
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw --force enable
+    check_error
+}
+
 function confirmInstall {
   printf "This will install Node and a server to run it. Do you want to contiune?\n";
   select yn in "Yes" "No"; do
@@ -22,12 +40,31 @@ function setUpDefaults {
   sudo apt-get update;
   sudo apt-get -y install git;
 }
+
+# Modify setUpNode function
 function setUpNode {
-  curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -;
-  sudo apt-get install -y nodejs;
-  sudo apt-get install -y build-essential;
-  sudo npm install -g pm2
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+    check_error
+    sudo apt-get install -y nodejs
+    check_error
+    sudo apt-get install -y build-essential
+    check_error
+    sudo npm install -g pm2
+    check_error
+
+    echo "Node.js version: $(node --version)"
+    echo "npm version: $(npm --version)"
+    echo "PM2 version: $(pm2 --version)"
 }
+
+# Add PM2 startup script
+function setupPM2 {
+    sudo pm2 startup systemd
+    check_error
+    sudo pm2 save
+    check_error
+}
+
 function checkForRoot {
   if [ "`whoami`" == "root" ];
   then
@@ -148,6 +185,7 @@ confirmInstall;
 setUpDefaults;
 prompForPort;
 setUpNode;
+setupFirewall;
 checkForRoot;
 promtForServer;
 exit;
